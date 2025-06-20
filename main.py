@@ -21,7 +21,7 @@ import random
     "",
 )
 class ReplyPlugin(Star):
-    def __init__(self, context: Context, config: AstrBotConfig):
+    def __init__(self, context: Context):
         super().__init__(context)
         self.replys: dict = {}
         self.reply_keys: list = []
@@ -40,14 +40,19 @@ class ReplyPlugin(Star):
         for seg in messages:
             if isinstance(seg, Comp.Plain):
                 text = seg.text.strip()
-                reply_msgs.extend(self.search(text))
+                reply_msgs.extend(await self.search(text))
+            elif isinstance(seg, Comp.At):
+                if seg.qq != event.get_self_id():
+                    # 如果是at其他人，则不回复
+                    return
         if reply_msgs:
             # 回复消息
             yield event.plain_result(reply_msgs[random.randint(0, len(reply_msgs) - 1)])
+            event.stop_event()
 
     async def search(self, text: str) -> list:
         """
-        搜索文本是否在keys中，并返回对应的回复消息
+        搜索模糊匹配keys，并返回对应的回复消息
         """
         result = []
         for key in self.reply_keys:
